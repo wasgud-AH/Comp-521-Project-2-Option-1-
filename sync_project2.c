@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 typedef struct {
     long long iterations;
@@ -17,15 +18,6 @@ static pthread_mutex_t counter_mutex = PTHREAD_MUTEX_INITIALIZER;
 static double elapsed_seconds(const struct timespec *start,
                               const struct timespec *end)
 {
-    /* TODO:
-     * Subtract start from end and return the elapsed time in seconds.
-     *
-     * Requirements:
-     * 1. Subtract tv_sec values. done
-     * 2. Subtract tv_nsec values. done
-     * 3. If the nanosecond result is negative, borrow one second. done
-     * 4. Return the result as a double. done
-     */
 
     time_t elapsed_time_seconds = end->tv_sec - start->tv_sec;
     double elapsed_time_nanoseconds = end->tv_nsec - start->tv_nsec;
@@ -47,17 +39,11 @@ static long long parse_positive_ll(const char *text, const char *label)
     errno = 0;
     value = strtoll(text, &end, 10);
 
-    /* TODO:
-     * Reject the input when:
-     * 1. errno is not zero;
-     * 2. no characters were converted;
-     * 3. extra characters remain after the number;
-     * 4. value is less than or equal to zero.
-     *
-     * Print an error containing label and exit with status 1.
-     */
-    (void)label;
 
+    if (errno != 0 || text == end || *end != '\0' || value <= 0 ){
+        fprintf(stderr, "Invalid %s: '%s' (must be a positive integer)\n", label, text);
+        exit(1);
+    }
     return value;
 }
 
@@ -69,16 +55,12 @@ static int parse_mutex_mode(const char *text)
     errno = 0;
     value = strtol(text, &end, 10);
 
-    /* TODO:
-     * Accept only:
-     * 0 = no mutex
-     * 1 = mutex enabled
-     *
-     * Reject invalid input and exit with status 1.
-     */
-    (void)value;
-    (void)end;
-
+    if (errno != 0 || text == end || *end != '\0' || (value != 0 && value != 1) ){
+        fprintf(stderr, "Invalid use_mutex: '%s' (must be 0 or 1)\n",text);
+        exit(1);
+    }
+    
+    return (int)value;
     return 0;
 }
 
@@ -86,21 +68,25 @@ static void *worker_main(void *argument)
 {
     worker_arg_t *worker = argument;
 
-    /* TODO:
-     * Repeat worker->iterations times.
-     *
-     * If worker->use_mutex is nonzero:
-     *     lock counter_mutex;
-     *     increment shared_counter;
-     *     unlock counter_mutex.
-     *
-     * Otherwise:
-     *     increment shared_counter without the mutex.
-     *
-     * Check the return values of pthread_mutex_lock() and
-     * pthread_mutex_unlock(). Exit with an error if either fails.
-     */
-    (void)worker;
+    for (long long counter = 0; counter < worker->iterations; counter++)
+    {
+        if (worker->use_mutex != 0){
+            int rc = pthread_mutex_lock(&counter_mutex);
+            if(rc != 0){
+                fprintf(stderr, "pthread_mutex_lock: %s\n", strerror(rc));
+                exit(1);
+            }
+            shared_counter++;
+            rc = pthread_mutex_unlock(&counter_mutex);
+            if(rc != 0){
+                fprintf(stderr, "pthread_mutex_unlock: %s\n", strerror(rc));
+                exit(1);
+            }
+        } else{
+            shared_counter++;
+        }
+    }
+    
 
     return NULL;
 }
@@ -119,6 +105,8 @@ int main(int argc, char **argv)
     long long base_iterations;
     long long remainder;
     int created = 0;
+    int create_failed = 0;
+    int join_failed = 0;
 
     if (argc != 5) {
         fprintf(stderr,
@@ -142,12 +130,15 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    /* TODO:
-     * Allocate the pthread_t array and worker_arg_t array.
-     * Check both allocations.
-     */
-    (void)threads;
-    (void)arguments;
+    threads = malloc((size_t)workers * sizeof *threads);
+    arguments = malloc((size_t)workers * sizeof *arguments);
+
+    if (threads == NULL || arguments == NULL) {
+        perror("malloc");
+        free(threads);
+        free(arguments);
+        return 1;
+    }
 
     shared_counter = 0;
 
@@ -161,24 +152,33 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    /* TODO:
-     * Create workers threads.
-     *
-     * For thread i:
-     * 1. Set arguments[i].use_mutex.
-     * 2. Assign base_iterations plus one extra iteration when
-     *    i is less than remainder.
-     * 3. Call pthread_create().
-     * 4. Track how many threads were successfully created.
-     */
-    (void)base_iterations;
-    (void)remainder;
-    (void)created;
+    for(int i = 0; i < workers; i++){
+        arguments[i].use_mutex = use_mutex;
+        arguments[i].iterations = base_iterations + (i < remainder ? 1 : 0);
 
-    /* TODO:
-     * Join each successfully created thread using pthread_join().
-     * Report an error if pthread_join() fails.
-     */
+        int rc = pthread_create(&threads[i], NULL, worker_main, &arguments[i]);
+        if(rc != 0){
+            fprintf(stderr, "pthread_create: %s\n", strerror(rc));
+            create_failed = 1;
+            break;
+        }
+
+        created++;
+    }
+
+    for (int i = 0; i < created; i++) {
+        int rc = pthread_join(threads[i], NULL);
+        if (rc != 0) {
+            fprintf(stderr, "pthread_join: %s\n", strerror(rc));
+            join_failed = 1;
+        }
+    }
+
+    if (create_failed || join_failed) {
+        free(threads);
+        free(arguments);
+        return 1;
+    }
 
     if (clock_gettime(CLOCK_MONOTONIC, &end) != 0) {
         perror("clock_gettime");

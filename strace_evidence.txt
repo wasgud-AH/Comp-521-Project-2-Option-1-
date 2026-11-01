@@ -1,0 +1,94 @@
+strace system-call evidence for sync_project2 (Option 1)
+Command pattern: strace -f -c -e trace=clone3,futex,mmap,munmap ./sync_project2 WORKERS 12000000 MODE 1
+Collected: Sat Oct 31 06:47:35 PM PDT 2026
+==================================================
+workers=1  use_mutex=0
+==================================================
+Program output (workers,total_iterations,use_mutex,trial,final_counter,elapsed_seconds):
+1,12000000,0,1,12000000,0.023779
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 94.29    0.000891         891         1           futex
+  5.71    0.000054          54         1           clone3
+  0.00    0.000000           0         9           mmap
+  0.00    0.000000           0         1           munmap
+--------------------------------------------------------------------
+100.00    0.000945          78        12           total
+
+==================================================
+workers=1  use_mutex=1
+==================================================
+Program output (workers,total_iterations,use_mutex,trial,final_counter,elapsed_seconds):
+1,12000000,1,1,12000000,0.230164
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 83.91    0.000485         485         1           futex
+  8.65    0.000050           5         9           mmap
+  4.33    0.000025          25         1           clone3
+  3.11    0.000018          18         1           munmap
+--------------------------------------------------------------------
+100.00    0.000578          48        12           total
+
+==================================================
+workers=2  use_mutex=0
+==================================================
+Program output (workers,total_iterations,use_mutex,trial,final_counter,elapsed_seconds):
+2,12000000,0,1,6063385,0.014341
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 56.48    0.000109          10        10           mmap
+ 23.83    0.000046          23         2           clone3
+ 11.92    0.000023          23         1           futex
+  7.77    0.000015          15         1           munmap
+--------------------------------------------------------------------
+100.00    0.000193          13        14           total
+
+==================================================
+workers=2  use_mutex=1
+==================================================
+Program output (workers,total_iterations,use_mutex,trial,final_counter,elapsed_seconds):
+2,12000000,1,1,12000000,0.489304
+
+% time     seconds  usecs/call     calls    errors syscall
+--------------------------------------------------------------------
+ 99.91    0.212386           6     31880     10107 futex
+  0.04    0.000089           8        10           mmap
+  0.03    0.000059          29         2           clone3
+  0.02    0.000038          38         1           munmap
+ --------------------------------------------------------------------
+100.00    0.212572           6     31893     10107 total
+
+==================================================
+workers=4  use_mutex=0
+==================================================
+Program output (workers,total_iterations,use_mutex,trial,final_counter,elapsed_seconds):
+4,12000000,0,1,3863388,0.009850
+
+% time     seconds  usecs/call     calls    errors syscall
+--------------------------------------------------------------------
+ 69.11    0.000472         157         3           futex
+ 22.84    0.000156          39         4           clone3
+  8.05    0.000055           4        12           mmap
+  0.00    0.000000           0         1           munmap
+--------------------------------------------------------------------
+100.00    0.000683          34        20           total
+
+==================================================
+workers=4  use_mutex=1
+==================================================
+Program output (workers,total_iterations,use_mutex,trial,final_counter,elapsed_seconds):
+4,12000000,1,1,12000000,0.654143
+
+% time     seconds  usecs/call     calls    errors syscall
+--------------------------------------------------------------------
+ 99.94    0.848264          11     75110     26451 futex
+  0.04    0.000381          95         4           clone3
+  0.01    0.000069           5        12           mmap
+  0.00    0.000025          25         1           munmap
+--------------------------------------------------------------------
+100.00    0.848739          11     75127     26451 total
+--------------------------------------------------------------------
+

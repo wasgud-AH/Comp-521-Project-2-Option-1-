@@ -1,0 +1,10 @@
+Expected-versus-observed final counter (from sync_results.csv)
+Expected value for every run = total_iterations = 12000000
+
+workers  use_mutex  trials     expected     mean_obs     min_obs      mean_lost(%)  
+1        0          3          12000000     12000000     12000000     0 (0.0%)
+1        1          3          12000000     12000000     12000000     0 (0.0%)
+2        0          3          12000000     6100825      6075600      5899175 (49.2%)
+2        1          3          12000000     12000000     12000000     0 (0.0%)
+4        0          3          12000000     3491240      3307161      8508760 (70.9%)
+4        1          3          12000000     12000000     12000000     0 (0.0%)
